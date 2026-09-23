@@ -1,10 +1,13 @@
 {
   "info": {
-    "name": "Book API - LAB-03 (GET / PUT / DELETE)",
-    "description": "LAB-03 in-class practical - updating and deleting REST resources. Run the requests in order: the GET requests show the catalogue before and after PUT and DELETE. The baseUrl variable defaults to http://localhost:8080.",
+    "name": "Book API - LAB-03 (GET / PUT / DELETE + POST extension)",
+    "description": "LAB-03 in-class practical - updating and deleting REST resources. Run the requests in order: the GET requests show the catalogue before and after PUT and DELETE. Requests 8-12 are our POST extension (create / verify / update / delete a book) and leave the catalogue in the same state as request 7. The baseUrl variable defaults to http://localhost:8080.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
-  "variable": [{ "key": "baseUrl", "value": "http://localhost:8080" }],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "createdBookId", "value": "" }
+  ],
   "item": [
     {
       "name": "1. View all books -> 200 OK",
@@ -90,6 +93,82 @@
         "pm.test('status 200 OK', () => pm.response.to.have.status(200));",
         "pm.test('book 3 is gone', () => pm.expect(books).to.have.lengthOf(2));",
         "pm.test('ids 1 and 2 remain', () => pm.expect(books.map(b => b.id)).to.eql([1, 2]));"
+      ] } }],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/api/v3/books", "host": ["{{baseUrl}}"], "path": ["api", "v3", "books"] }
+      }
+    },
+    {
+      "name": "8. Create a book (POST) -> 201 Created + Location",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+        "pm.test('status 201 Created', () => pm.response.to.have.status(201));",
+        "const created = pm.response.json();",
+        "const location = pm.response.headers.get('Location');",
+        "pm.test('Location header points at the new resource', () => pm.expect(location).to.include('/api/v3/books/'));",
+        "pm.test('server assigned a new id (after the seeded 1..3)', () => pm.expect(created.id).to.be.above(3));",
+        "pm.test('body carries the values we sent', () => pm.expect(created.title).to.eql('Spring in Action'));",
+        "pm.collectionVariables.set('createdBookId', String(created.id));"
+      ] } }],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"title\": \"Spring in Action\",\n  \"author\": \"Craig Walls\",\n  \"availableCopies\": 2\n}", "options": { "raw": { "language": "json" } } },
+        "url": { "raw": "{{baseUrl}}/api/v3/books", "host": ["{{baseUrl}}"], "path": ["api", "v3", "books"] }
+      }
+    },
+    {
+      "name": "9. Verify the creation (GET) -> the new book is listed",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+        "const books = pm.response.json();",
+        "pm.test('status 200 OK', () => pm.response.to.have.status(200));",
+        "pm.test('3 books again', () => pm.expect(books).to.have.lengthOf(3));",
+        "const id = Number(pm.collectionVariables.get('createdBookId'));",
+        "const created = books.find(b => b.id === id);",
+        "pm.test('the created book is addressable by its id', () => pm.expect(created, 'created book present').to.exist);",
+        "pm.test('title unchanged', () => pm.expect(created.title).to.eql('Spring in Action'));"
+      ] } }],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/api/v3/books", "host": ["{{baseUrl}}"], "path": ["api", "v3", "books"] }
+      }
+    },
+    {
+      "name": "10. Update the created book (PUT) -> 200 OK",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+        "pm.test('status 200 OK', () => pm.response.to.have.status(200));",
+        "const book = pm.response.json();",
+        "pm.test('same id as the created book', () => pm.expect(String(book.id)).to.eql(pm.collectionVariables.get('createdBookId')));",
+        "pm.test('title updated', () => pm.expect(book.title).to.eql('Spring in Action, 6th Edition'));",
+        "pm.test('available copies updated', () => pm.expect(book.availableCopies).to.eql(5));"
+      ] } }],
+      "request": {
+        "method": "PUT",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"title\": \"Spring in Action, 6th Edition\",\n  \"author\": \"Craig Walls\",\n  \"availableCopies\": 5\n}", "options": { "raw": { "language": "json" } } },
+        "url": { "raw": "{{baseUrl}}/api/v3/books/{{createdBookId}}", "host": ["{{baseUrl}}"], "path": ["api", "v3", "books", "{{createdBookId}}"] }
+      }
+    },
+    {
+      "name": "11. Delete the created book (DELETE) -> 204 No Content",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+        "pm.test('status 204 No Content', () => pm.response.to.have.status(204));",
+        "pm.test('no response body', () => pm.expect(pm.response.text()).to.be.empty);"
+      ] } }],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/api/v3/books/{{createdBookId}}", "host": ["{{baseUrl}}"], "path": ["api", "v3", "books", "{{createdBookId}}"] }
+      }
+    },
+    {
+      "name": "12. Verify the catalogue is back to 2 books",
+      "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+        "const books = pm.response.json();",
+        "pm.test('status 200 OK', () => pm.response.to.have.status(200));",
+        "pm.test('2 books left (ids 1 and 2)', () => pm.expect(books.map(b => b.id)).to.eql([1, 2]));"
       ] } }],
       "request": {
         "method": "GET",

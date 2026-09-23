@@ -6,14 +6,18 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * REST controller for the library book resource, published under
@@ -24,7 +28,14 @@ import java.util.concurrent.CopyOnWriteArrayList;
  *     <li>{@code GET    /api/v3/books}          - list all books (200 OK)</li>
  *     <li>{@code PUT    /api/v3/books/{bookId}} - update a book (200 OK / 404 Not Found)</li>
  *     <li>{@code DELETE /api/v3/books/{bookId}} - delete a book (204 No Content / 404 Not Found)</li>
+ *     <li>{@code POST   /api/v3/books}          - create a book (201 Created)</li>
  * </ul>
+ *
+ * <p><b>Note:</b> {@code POST} is our own extension - the LAB-03 hand-out asks
+ * only for GET, PUT and DELETE, and those three behave exactly as the assignment
+ * requires. Creating a book was added because a catalogue resource normally
+ * supports the full set of REST verbs, and because testing an update or a delete
+ * is easier when a new book can be created first.</p>
  *
  * <p>The catalogue is kept <b>in memory</b> (this lab uses no database), so the
  * original three books come back every time the application is restarted. The
@@ -44,6 +55,14 @@ public class BookController {
     ));
 
     /**
+     * Next id handed out by {@link #createBook(BookInput)}. It starts right after
+     * the three seeded books and only ever moves forward, so the id of a deleted
+     * book is never reused. An {@link AtomicLong} keeps the counter consistent
+     * when two clients create a book at the same moment.
+     */
+    private final AtomicLong nextId = new AtomicLong(4L);
+
+    /**
      * Returns every book of the catalogue.
      *
      * <p>Sent before and after PUT / DELETE to prove that the list really
@@ -54,6 +73,43 @@ public class BookController {
     @GetMapping
     public List<Book> getAllBooks() {
         return books;
+    }
+
+    /**
+     * Creates a new book and adds it to the catalogue - an extension of ours, not
+     * part of the LAB-03 hand-out.
+     *
+     * <p>The id is assigned by the server ({@link #nextId}), because
+     * {@link BookInput} deliberately carries no id: the client describes the book
+     * it wants to create, the server decides where it lives. The response follows
+     * the REST convention for a creation: {@code 201 Created} with the new book as
+     * body, plus a {@code Location} header pointing at the new resource, e.g.
+     * {@code Location: http://localhost:8080/api/v3/books/4}. The header is built
+     * from the current request ({@link ServletUriComponentsBuilder}), so the base
+     * path is not repeated in the code.</p>
+     *
+     * @param input title, author and available copies from the JSON request body
+     * @return {@code 201 Created} with the created book, including its new id
+     */
+    @PostMapping
+    public ResponseEntity<Book> createBook(@RequestBody BookInput input) {
+        // The id is generated here, never read from the body
+        Book createdBook = new Book(
+                nextId.getAndIncrement(),
+                input.title(),
+                input.author(),
+                input.availableCopies()
+        );
+
+        books.add(createdBook);
+
+        // Location: <current request URL>/<new id>  ->  /api/v3/books/4
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{bookId}")
+                .buildAndExpand(createdBook.id())
+                .toUri();
+
+        return ResponseEntity.created(location).body(createdBook);
     }
 
     /**

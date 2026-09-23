@@ -10,11 +10,14 @@ import org.springframework.http.MediaType;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -119,5 +122,86 @@ class BookControllerTest {
     void deleteBook_twice_secondCallReturns404() throws Exception {
         mockMvc.perform(delete("/api/v3/books/3")).andExpect(status().isNoContent());
         mockMvc.perform(delete("/api/v3/books/3")).andExpect(status().isNotFound());
+    }
+
+    // ---------------------------------------------------------------------
+    // POST - our own extension, not part of the LAB-03 hand-out
+    // ---------------------------------------------------------------------
+
+    @Test
+    @DisplayName("POST /api/v3/books -> 201 Created with a Location header and a server-assigned id")
+    void createBook_returns201WithLocationAndAssignedId() throws Exception {
+        BookInput input = new BookInput("Spring in Action", "Craig Walls", 2);
+
+        mockMvc.perform(post("/api/v3/books")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(input)))
+                .andExpect(status().isCreated())
+                .andExpect(header().string("Location", endsWith("/api/v3/books/4")))
+                .andExpect(jsonPath("$.id").value(4))
+                .andExpect(jsonPath("$.title").value("Spring in Action"))
+                .andExpect(jsonPath("$.author").value("Craig Walls"))
+                .andExpect(jsonPath("$.availableCopies").value(2));
+
+        // the created book is really part of the catalogue now
+        mockMvc.perform(get("/api/v3/books"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(4)))
+                .andExpect(jsonPath("$[3].id").value(4))
+                .andExpect(jsonPath("$[3].title").value("Spring in Action"));
+    }
+
+    @Test
+    @DisplayName("POST twice -> ids 4 and 5 (the counter only moves forward)")
+    void createBook_assignsIncrementingIds() throws Exception {
+        BookInput first = new BookInput("First Book", "Author A", 1);
+        BookInput second = new BookInput("Second Book", "Author B", 2);
+
+        mockMvc.perform(post("/api/v3/books")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(first)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(4));
+
+        mockMvc.perform(post("/api/v3/books")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(second)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(5));
+
+        mockMvc.perform(get("/api/v3/books"))
+                .andExpect(jsonPath("$", hasSize(5)))
+                .andExpect(jsonPath("$[3].title").value("First Book"))
+                .andExpect(jsonPath("$[4].title").value("Second Book"));
+    }
+
+    @Test
+    @DisplayName("A created book can be updated (PUT) and deleted (DELETE) like any other book")
+    void createBook_createdBookIsFullyAddressable() throws Exception {
+        BookInput input = new BookInput("Temporary Book", "Nobody", 1);
+        BookInput update = new BookInput("Temporary Book, 2nd Edition", "Nobody", 3);
+
+        mockMvc.perform(post("/api/v3/books")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(input)))
+                .andExpect(status().isCreated());
+
+        // PUT works on the id the server assigned
+        mockMvc.perform(put("/api/v3/books/4")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(update)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(4))
+                .andExpect(jsonPath("$.title").value("Temporary Book, 2nd Edition"))
+                .andExpect(jsonPath("$.availableCopies").value(3));
+
+        // and so does DELETE
+        mockMvc.perform(delete("/api/v3/books/4"))
+                .andExpect(status().isNoContent());
+
+        // the catalogue is back to the three original books
+        mockMvc.perform(get("/api/v3/books"))
+                .andExpect(jsonPath("$", hasSize(3)))
+                .andExpect(jsonPath("$[2].id").value(3));
     }
 }

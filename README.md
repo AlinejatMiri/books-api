@@ -13,14 +13,22 @@ Base URL:   http://localhost:8080/api/v3/books
 GET    /api/v3/books            -> 200 OK   (list all books)
 PUT    /api/v3/books/{bookId}   -> 200 OK + updated book  |  404 Not Found
 DELETE /api/v3/books/{bookId}   -> 204 No Content         |  404 Not Found
+POST   /api/v3/books            -> 201 Created + Location  |  (our extension)
 ```
 
 > **API version note.** The resource is versioned in the URL (`/api/v3/...`). That
 > prefix is declared exactly once, in the class-level
-> `@RequestMapping("/api/v3/books")` of `BookController`; all three endpoints
+> `@RequestMapping("/api/v3/books")` of `BookController`; all four endpoints
 > inherit it, so moving to another version means editing that single line.
 > Anything else — tests, Postman collection, `openapi.yaml`, Docker health check —
 > has already been aligned to `v3`.
+
+> **`POST` is an extension.** The LAB-03 hand-out requires `GET`, `PUT` and
+> `DELETE` only, and those three behave exactly as the assignment specifies.
+> `POST /api/v3/books` was added on top because a catalogue resource normally
+> supports the full set of REST verbs, and because it makes the API testable from
+> an empty start. If your instructor grades strictly against the hand-out, the
+> three required endpoints are unaffected by it.
 
 ## Initial data (loaded at start-up)
 
@@ -61,6 +69,19 @@ Then open Postman and send the requests below (or import
 Postman settings for the PUT request: **Body → raw → JSON** (Postman also sets
 `Content-Type: application/json` automatically).
 
+### POST extension (requests 8–12 in the collection)
+
+| # | Method | Endpoint | Body | Expected result | Observed |
+|---|---|---|---|---|---|
+| 8 | `POST` | `/api/v3/books` | `{"title":"Spring in Action","author":"Craig Walls","availableCopies":2}` | `201 Created` + new book + `Location` header | ✅ id 4, `Location: …/api/v3/books/4` |
+| 9 | `GET` | `/api/v3/books` | – | `200 OK`, 3 books, new one listed | ✅ ids 1, 2, 4 |
+| 10 | `PUT` | `/api/v3/books/4` | updated title/copies | `200 OK` + updated book | ✅ same id, new values |
+| 11 | `DELETE` | `/api/v3/books/4` | – | `204 No Content` | ✅ 204, no body |
+| 12 | `GET` | `/api/v3/books` | – | `200 OK`, back to 2 books | ✅ ids 1 and 2 |
+
+Requests 8–12 leave the catalogue exactly where request 7 left it, so the
+collection has no side effects on the LAB-03 result.
+
 ## Project structure
 
 ```
@@ -74,13 +95,13 @@ book-api/
 └── src
     ├── main/java/edu/ku/bookapi/
     │   ├── BookApiApplication.java          # entry point (@SpringBootApplication)
-    │   ├── controller/BookController.java   # in-memory catalogue + GET / PUT / DELETE
+    │   ├── controller/BookController.java   # in-memory catalogue + GET / POST / PUT / DELETE
     │   └── model/
     │       ├── Book.java                    # resource record (id, title, author, availableCopies)
     │       └── BookInput.java               # request body record (no id!)
     ├── main/resources/application.yml       # port 8080, logging
     └── test/java/edu/ku/bookapi/
-        ├── controller/BookControllerTest.java   # MockMvc slice: 200/404/204 per scenario
+        ├── controller/BookControllerTest.java   # MockMvc slice: 200/201/204/404 per scenario
         └── BookApiEndToEndTest.java             # real HTTP (RANDOM_PORT) in Postman order
 ```
 
@@ -125,6 +146,17 @@ public ResponseEntity<Void> deleteBook(@PathVariable Long bookId) {
     books.remove(existingBook.get());                                     // 2. remove
     return ResponseEntity.noContent().build();                            // 3. 204
 }
+
+@PostMapping                                                              // our extension
+public ResponseEntity<Book> createBook(@RequestBody BookInput input) {
+    Book createdBook = new Book(nextId.getAndIncrement(),                 // id from the server,
+                                input.title(), input.author(),            // never from the body
+                                input.availableCopies());
+    books.add(createdBook);
+    URI location = ServletUriComponentsBuilder.fromCurrentRequest()       // Location:
+            .path("/{bookId}").buildAndExpand(createdBook.id()).toUri();  //   .../books/4
+    return ResponseEntity.created(location).body(createdBook);            // 201 Created
+}
 ```
 
 ## Completion checklist
@@ -139,6 +171,7 @@ public ResponseEntity<Void> deleteBook(@PathVariable Long bookId) {
 | `DELETE` returns `404` for a missing book | ✅ |
 | List is really changed after PUT / DELETE (verified by `GET`) | ✅ |
 | Postman tests completed | ✅ collection in `docs/` |
+| *(extension)* `POST` creates a book (`201 Created` + `Location`) | ✅ |
 
 ## Automated tests
 
@@ -147,14 +180,16 @@ public ResponseEntity<Void> deleteBook(@PathVariable Long bookId) {
 ```
 
 * `controller/BookControllerTest` — `@WebMvcTest` + `MockMvc`: initial list,
-  PUT `200`, PUT `404`, DELETE `204`, DELETE `404`, delete-twice.
+  PUT `200`, PUT `404`, DELETE `204`, DELETE `404`, delete-twice, plus three
+  `POST` tests (create → `201` + `Location`, incrementing ids, and
+  create → update → delete round trip).
 * `BookApiEndToEndTest` — `@SpringBootTest(RANDOM_PORT)` + `TestRestTemplate`:
-  the same seven calls as the Postman table over **real HTTP**, including the
-  final `GET` that proves the catalogue changed.
+  the same calls as the Postman table over **real HTTP**, including the final
+  `GET` that proves the catalogue changed and the `POST` extension.
 
 Both classes rebuild the controller for every test method
 (`@DirtiesContext` / ordered scenario), so the in-memory list always starts with
-the three original books.
+the three original books. Current result: **18 tests, 0 failures**.
 
 ## Design notes
 
@@ -176,14 +211,22 @@ the three original books.
    concurrent requests; reads always see a consistent snapshot.
 7. **No database** — the hand-out asks for an in-memory list, so the whole
    application is web-only (no JPA/H2, no extra configuration).
+8. **`POST` answers `201 Created` + `Location`** — the REST convention for a
+   creation: the client learns both the new representation and the URL where it
+   now lives. The header is built with `ServletUriComponentsBuilder` from the
+   incoming request, so the controller does not hard-code host or base path.
+9. **Server-generated ids** — `nextId` is an `AtomicLong` starting at `4`
+   (right after the three seeded books) and only moves forward, so the id of a
+   deleted book is never handed out again while the application runs.
 
 ## Known limitations
 
 * The catalogue is lost on restart (by design for this lab) and cannot be shared
   between instances.
 * No request validation (e.g. a negative `availableCopies` or a blank title is
-  accepted) and no `POST /books` endpoint — both were outside the scope of
-  LAB-03.
+  accepted) — outside the scope of LAB-03.
+* `POST` is an extension of ours, not a hand-out requirement: it has no
+  duplicate-title check, so the same book can be created several times.
 * Concurrent `PUT`s on the same book follow "last write wins".
 
 ## Note on git history

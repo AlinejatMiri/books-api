@@ -114,3 +114,37 @@ contract.
 | 4 | DELETE | `/api/v3/books/3` | 204 No Content | ✅ 204, empty body |
 | 5 | DELETE | `/api/v3/books/99` | 404 Not Found | ✅ 404 |
 | 6 | GET | `/api/v3/books` | 200 OK, 2 books, book 2 updated | ✅ 2 books, ids 1 and 2 |
+| 7 | POST | `/api/v3/books` | 201 Created + new book + `Location` | ✅ id 4, `Location: …/api/v3/books/4` |
+| 8 | PUT | `/api/v3/books/4` | 200 OK, id kept | ✅ id 4, new title, 5 copies |
+| 9 | DELETE | `/api/v3/books/4` | 204 No Content | ✅ 204, empty body |
+| 10 | DELETE | `/api/v3/books/4` | 404 Not Found (already deleted) | ✅ 404 |
+| 11 | POST | `/api/v3/books` | 201 Created with the **next** id | ✅ id 6 (4 is not reused) |
+| 12 | GET | `/api/v3/books` | 200 OK | ✅ 2 original books + the created one |
+
+Old paths behave as expected too: `GET /api/v1/books` → `404`, and an
+unsupported verb such as `PATCH /api/v3/books` → `405 Method Not Allowed`
+(which is what the API answered for `POST` before the endpoint was added).
+
+### 10. Why did we add `POST` when the hand-out only asks for PUT and DELETE?
+
+The hand-out requires `GET`, `PUT` and `DELETE`, and those three are implemented
+exactly as specified. `POST /api/v3/books` is an **extension**, added because:
+
+- A REST collection normally supports the full verb set. Without `POST` the
+  catalogue is born with three books and can only shrink, which is not a realistic
+  library API.
+- It makes the other operations easier to demonstrate: a brand-new book can be
+  created, updated with `PUT` and removed with `DELETE`, which is how the Postman
+  requests 8–12 exercise the API.
+
+Creating a resource answers **`201 Created`** (not `200 OK`, which means "here is
+the existing representation you asked for") together with a **`Location`** header
+naming the URL of the new resource, so the client does not have to guess the id.
+The id itself is assigned by the server through an `AtomicLong` counter: `BookInput`
+still has no id field, keeping the rule "the client never chooses an id" consistent
+with `PUT`, where the id comes from the URL. The counter only moves forward, so a
+deleted id is never reissued.
+
+Nothing in the required behaviour changed: no test for `GET`/`PUT`/`DELETE` needed
+a single edit when `POST` was added, which is the practical benefit of resource
+orientation — a new verb is a new method, not a rewrite of the existing ones.

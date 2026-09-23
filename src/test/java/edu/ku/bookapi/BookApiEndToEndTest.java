@@ -109,4 +109,52 @@ class BookApiEndToEndTest {
         assertThat(response.getBody()[1].title()).isEqualTo("Modern Web Development"); // book 2 was updated
         assertThat(response.getBody()[1].availableCopies()).isEqualTo(6);
     }
+
+    @Test
+    @Order(7)
+    @DisplayName("7. POST /api/v3/books -> 201 Created with the new book and a Location header")
+    void createBook() {
+        BookInput input = new BookInput("Spring in Action", "Craig Walls", 2);
+
+        ResponseEntity<Book> response =
+                restTemplate.exchange(BOOKS_URL, HttpMethod.POST, new HttpEntity<>(input), Book.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().id()).isEqualTo(4L);      // next free id after the seeded 1..3
+        assertThat(response.getBody().title()).isEqualTo("Spring in Action");
+        assertThat(response.getBody().author()).isEqualTo("Craig Walls");
+        assertThat(response.getBody().availableCopies()).isEqualTo(2);
+        assertThat(response.getHeaders().getLocation()).isNotNull();
+        assertThat(response.getHeaders().getLocation().toString()).endsWith("/api/v3/books/4");
+    }
+
+    @Test
+    @Order(8)
+    @DisplayName("8. GET after POST -> the created book is listed with its server-assigned id")
+    void getBooksAfterCreate() {
+        ResponseEntity<Book[]> response = restTemplate.getForEntity(BOOKS_URL, Book[].class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).hasSize(3);
+        assertThat(response.getBody())
+                .extracting(Book::id)
+                .containsExactly(1L, 2L, 4L);       // the created book is addressable by id 4
+        assertThat(response.getBody()[2].title()).isEqualTo("Spring in Action");
+    }
+
+    @Test
+    @Order(9)
+    @DisplayName("9. DELETE the created book -> 204, catalogue back to the LAB-03 end state")
+    void deleteCreatedBook() {
+        ResponseEntity<Void> deleteResponse =
+                restTemplate.exchange(BOOKS_URL + "/4", HttpMethod.DELETE, null, Void.class);
+        assertThat(deleteResponse.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+
+        ResponseEntity<Book[]> response = restTemplate.getForEntity(BOOKS_URL, Book[].class);
+        assertThat(response.getBody()).hasSize(2);
+        assertThat(response.getBody())
+                .extracting(Book::id)
+                .containsExactly(1L, 2L);
+    }
 }

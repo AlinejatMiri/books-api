@@ -2,6 +2,9 @@
 # LAB-03 - Book Management API (PUT and DELETE), Enterprise Web Application
 # Development, Kabul University.
 #
+# POST is our own extension of the LAB-03 hand-out (which asks for GET, PUT and
+# DELETE only); GET, PUT and DELETE behave exactly as the assignment requires.
+#
 # Base URL: http://localhost:8080/api/v3/books
 #
 # The catalogue is kept in memory inside BookController, so no database is
@@ -11,7 +14,7 @@ openapi: 3.0.3
 info:
   title: Book Management API (LAB-03)
   version: 0.0.1-SNAPSHOT
-  description: In-memory library book catalogue exposing GET, PUT and DELETE.
+  description: In-memory library book catalogue exposing GET, PUT and DELETE (the LAB-03 requirement) plus POST as an extension.
 servers:
   - url: http://localhost:8080
     description: Local development server
@@ -31,6 +34,30 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Book'
+    post:
+      tags: [Books]
+      summary: Create a new book (extension, not required by LAB-03)
+      operationId: createBook
+      requestBody:
+        required: true
+        description: Title, author and number of available copies. The id is assigned by the server.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookInput'
+      responses:
+        '201':
+          description: Book created. The created book, including its new id, is returned.
+          headers:
+            Location:
+              description: URL of the new resource, e.g. http://localhost:8080/api/v3/books/4
+              schema:
+                type: string
+                example: http://localhost:8080/api/v3/books/4
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
 
   /api/v3/books/{bookId}:
     put:
@@ -101,7 +128,7 @@ components:
 
     BookInput:
       type: object
-      description: Request body used to update a book - deliberately without an id.
+      description: Request body used to create or update a book - deliberately without an id, because the client never chooses it (the server assigns it on POST and it comes from the URL on PUT).
       required: [title, author, availableCopies]
       properties:
         title:
