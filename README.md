@@ -9,11 +9,18 @@ A small library catalogue REST API whose data lives in an **in-memory list**
 implements the two new operations:
 
 ```
-Base URL:   http://localhost:8080/api/v1/books
-GET    /api/v1/books            -> 200 OK   (list all books)
-PUT    /api/v1/books/{bookId}   -> 200 OK + updated book  |  404 Not Found
-DELETE /api/v1/books/{bookId}   -> 204 No Content         |  404 Not Found
+Base URL:   http://localhost:8080/api/v3/books
+GET    /api/v3/books            -> 200 OK   (list all books)
+PUT    /api/v3/books/{bookId}   -> 200 OK + updated book  |  404 Not Found
+DELETE /api/v3/books/{bookId}   -> 204 No Content         |  404 Not Found
 ```
+
+> **API version note.** The resource is versioned in the URL (`/api/v3/...`). That
+> prefix is declared exactly once, in the class-level
+> `@RequestMapping("/api/v3/books")` of `BookController`; all three endpoints
+> inherit it, so moving to another version means editing that single line.
+> Anything else — tests, Postman collection, `openapi.yaml`, Docker health check —
+> has already been aligned to `v3`.
 
 ## Initial data (loaded at start-up)
 
@@ -43,13 +50,13 @@ Then open Postman and send the requests below (or import
 
 | # | Method | Endpoint | Body | Expected result | Observed |
 |---|---|---|---|---|---|
-| 1 | `GET` | `/api/v1/books` | – | `200 OK`, 3 books | ✅ 3 books |
-| 2 | `PUT` | `/api/v1/books/2` | `{"title":"Modern Web Development","author":"Sara Ahmad","availableCopies":6}` | `200 OK` + updated book | ✅ id 2, new title, 6 copies |
-| 3 | `GET` | `/api/v1/books` | – | `200 OK` + changed book 2 | ✅ book 2 updated |
-| 4 | `PUT` | `/api/v1/books/99` | any book JSON | `404 Not Found` | ✅ 404 |
-| 5 | `DELETE` | `/api/v1/books/3` | – | `204 No Content` | ✅ 204, no body |
-| 6 | `DELETE` | `/api/v1/books/99` | – | `404 Not Found` | ✅ 404 |
-| 7 | `GET` | `/api/v1/books` | – | `200 OK`, 2 books left | ✅ ids 1 and 2 |
+| 1 | `GET` | `/api/v3/books` | – | `200 OK`, 3 books | ✅ 3 books |
+| 2 | `PUT` | `/api/v3/books/2` | `{"title":"Modern Web Development","author":"Sara Ahmad","availableCopies":6}` | `200 OK` + updated book | ✅ id 2, new title, 6 copies |
+| 3 | `GET` | `/api/v3/books` | – | `200 OK` + changed book 2 | ✅ book 2 updated |
+| 4 | `PUT` | `/api/v3/books/99` | any book JSON | `404 Not Found` | ✅ 404 |
+| 5 | `DELETE` | `/api/v3/books/3` | – | `204 No Content` | ✅ 204, no body |
+| 6 | `DELETE` | `/api/v3/books/99` | – | `404 Not Found` | ✅ 404 |
+| 7 | `GET` | `/api/v3/books` | – | `200 OK`, 2 books left | ✅ ids 1 and 2 |
 
 Postman settings for the PUT request: **Body → raw → JSON** (Postman also sets
 `Content-Type: application/json` automatically).
@@ -151,7 +158,7 @@ the three original books.
 
 ## Design notes
 
-1. **Resource-oriented URLs** — `/api/v1/books/{bookId}` with the verb in the
+1. **Resource-oriented URLs** — `/api/v3/books/{bookId}` with the verb in the
    HTTP method, not `/updateBook` or `/deleteBook`.
 2. **Id from the URL, never from the body** — `BookInput` has no `id` field and
    the updated record is built with the `@PathVariable` value, which is what

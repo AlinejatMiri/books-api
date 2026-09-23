@@ -39,9 +39,9 @@ class BookControllerTest {
     private ObjectMapper objectMapper;
 
     @Test
-    @DisplayName("GET /api/v1/books -> 200 OK with the three initial books")
+    @DisplayName("GET /api/v3/books -> 200 OK with the three initial books")
     void getAllBooks_returnsInitialCatalogue() throws Exception {
-        mockMvc.perform(get("/api/v1/books"))
+        mockMvc.perform(get("/api/v3/books"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$", hasSize(3)))
@@ -53,11 +53,11 @@ class BookControllerTest {
     }
 
     @Test
-    @DisplayName("PUT /api/v1/books/2 -> 200 OK, keeps the id and replaces the values")
+    @DisplayName("PUT /api/v3/books/2 -> 200 OK, keeps the id and replaces the values")
     void updateBook_existingBook_returnsUpdatedBook() throws Exception {
         BookInput input = new BookInput("Modern Web Development", "Sara Ahmad", 6);
 
-        mockMvc.perform(put("/api/v1/books/2")
+        mockMvc.perform(put("/api/v3/books/2")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(input)))
                 .andExpect(status().isOk())
@@ -67,7 +67,7 @@ class BookControllerTest {
                 .andExpect(jsonPath("$.availableCopies").value(6));
 
         // GET afterwards proves that the list really changed
-        mockMvc.perform(get("/api/v1/books"))
+        mockMvc.perform(get("/api/v3/books"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(3)))
                 .andExpect(jsonPath("$[1].id").value(2))
@@ -76,28 +76,28 @@ class BookControllerTest {
     }
 
     @Test
-    @DisplayName("PUT /api/v1/books/99 -> 404 Not Found (missing book)")
+    @DisplayName("PUT /api/v3/books/99 -> 404 Not Found (missing book)")
     void updateBook_missingBook_returns404() throws Exception {
         BookInput input = new BookInput("Ghost Book", "Nobody", 1);
 
-        mockMvc.perform(put("/api/v1/books/99")
+        mockMvc.perform(put("/api/v3/books/99")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(input)))
                 .andExpect(status().isNotFound());
 
         // The catalogue is untouched by a failed update
-        mockMvc.perform(get("/api/v1/books"))
+        mockMvc.perform(get("/api/v3/books"))
                 .andExpect(jsonPath("$", hasSize(3)));
     }
 
     @Test
-    @DisplayName("DELETE /api/v1/books/3 -> 204 No Content and the book is removed")
+    @DisplayName("DELETE /api/v3/books/3 -> 204 No Content and the book is removed")
     void deleteBook_existingBook_returns204AndRemovesBook() throws Exception {
-        mockMvc.perform(delete("/api/v1/books/3"))
+        mockMvc.perform(delete("/api/v3/books/3"))
                 .andExpect(status().isNoContent())
                 .andExpect(content().string(""));
 
-        mockMvc.perform(get("/api/v1/books"))
+        mockMvc.perform(get("/api/v3/books"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(2)))
                 .andExpect(jsonPath("$[0].id").value(1))
@@ -105,19 +105,19 @@ class BookControllerTest {
     }
 
     @Test
-    @DisplayName("DELETE /api/v1/books/99 -> 404 Not Found (nothing to delete)")
+    @DisplayName("DELETE /api/v3/books/99 -> 404 Not Found (nothing to delete)")
     void deleteBook_missingBook_returns404() throws Exception {
-        mockMvc.perform(delete("/api/v1/books/99"))
+        mockMvc.perform(delete("/api/v3/books/99"))
                 .andExpect(status().isNotFound());
 
-        mockMvc.perform(get("/api/v1/books"))
+        mockMvc.perform(get("/api/v3/books"))
                 .andExpect(jsonPath("$", hasSize(3)));
     }
 
     @Test
     @DisplayName("Deleting the same book twice -> 204 and then 404")
     void deleteBook_twice_secondCallReturns404() throws Exception {
-        mockMvc.perform(delete("/api/v1/books/3")).andExpect(status().isNoContent());
-        mockMvc.perform(delete("/api/v1/books/3")).andExpect(status().isNotFound());
+        mockMvc.perform(delete("/api/v3/books/3")).andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/v3/books/3")).andExpect(status().isNotFound());
     }
 }

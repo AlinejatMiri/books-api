@@ -2,7 +2,7 @@
 # LAB-03 - Book Management API (PUT and DELETE), Enterprise Web Application
 # Development, Kabul University.
 #
-# Base URL: http://localhost:8080/api/v1/books
+# Base URL: http://localhost:8080/api/v3/books
 #
 # The catalogue is kept in memory inside BookController, so no database is
 # needed: every restart restores the three initial books.
@@ -17,7 +17,7 @@ servers:
     description: Local development server
 
 paths:
-  /api/v1/books:
+  /api/v3/books:
     get:
       tags: [Books]
       summary: List all books
@@ -32,7 +32,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/Book'
 
-  /api/v1/books/{bookId}:
+  /api/v3/books/{bookId}:
     put:
       tags: [Books]
       summary: Update an existing book

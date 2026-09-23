@@ -17,13 +17,13 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * REST controller for the library book resource, published under
- * {@code /api/v1/books}.
+ * {@code /api/v3/books}.
  *
  * <p>LAB-03 - <em>Updating and Deleting REST Resources</em>:</p>
  * <ul>
- *     <li>{@code GET    /api/v1/books}          - list all books (200 OK)</li>
- *     <li>{@code PUT    /api/v1/books/{bookId}} - update a book (200 OK / 404 Not Found)</li>
- *     <li>{@code DELETE /api/v1/books/{bookId}} - delete a book (204 No Content / 404 Not Found)</li>
+ *     <li>{@code GET    /api/v3/books}          - list all books (200 OK)</li>
+ *     <li>{@code PUT    /api/v3/books/{bookId}} - update a book (200 OK / 404 Not Found)</li>
+ *     <li>{@code DELETE /api/v3/books/{bookId}} - delete a book (204 No Content / 404 Not Found)</li>
  * </ul>
  *
  * <p>The catalogue is kept <b>in memory</b> (this lab uses no database), so the
@@ -33,7 +33,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * concurrently.</p>
  */
 @RestController
-@RequestMapping("/api/v1/books")
+@RequestMapping("/api/v3/books")
 public class BookController {
 
     /** In-memory catalogue - the initial data given in the lab hand-out. */
@@ -66,7 +66,7 @@ public class BookController {
      * position in the list.</p>
      *
      * @param bookId identifier from the URL, e.g. {@code 2} in
-     *               {@code PUT /api/v1/books/2}
+     *               {@code PUT /api/v3/books/2}
      * @param input  new values from the JSON request body ({@link BookInput})
      * @return {@code 200 OK} with the updated book, or {@code 404 Not Found}
      *         when no book has that id
@@ -97,7 +97,7 @@ public class BookController {
      * Deletes a book from the catalogue - the HTTP DELETE of the lab.
      *
      * @param bookId identifier from the URL, e.g. {@code 3} in
-     *               {@code DELETE /api/v1/books/3}
+     *               {@code DELETE /api/v3/books/3}
      * @return {@code 204 No Content} when the book was removed (success has no
      *         body to return), or {@code 404 Not Found} when no book has that id
      */

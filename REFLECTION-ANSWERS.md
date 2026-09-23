@@ -5,11 +5,11 @@ Topic: `PUT` and `DELETE` with Spring Boot
 
 ---
 
-### 1. Why is the URL `PUT /api/v1/books/2` and not `/updateBook`?
+### 1. Why is the URL `PUT /api/v3/books/2` and not `/updateBook`?
 
 A REST URL names a **resource** (the book with id 2), not an action. The HTTP
 method carries the action: `GET` reads it, `PUT` replaces it, `DELETE` removes
-it. So `/api/v1/books/2` is used with three different verbs instead of inventing
+it. So `/api/v3/books/2` is used with three different verbs instead of inventing
 verbs in the path (`/updateBook`, `/deleteBook`). This keeps one clear URL per
 resource and lets HTTP caches, proxies and monitoring tools understand the API.
 
@@ -59,7 +59,7 @@ service layer would mutate the managed entity instead.
 controller checks the result of `findById(...)` and answers with
 `ResponseEntity.notFound()`. The id is a *valid* request to a *non-existing*
 resource, which is precisely what `404` means (the same code is returned for
-`GET /api/v1/books/99`). `500` would be wrong: nothing failed on the server.
+`GET /api/v3/books/99`). `500` would be wrong: nothing failed on the server.
 Notice also that a failed `PUT`/`DELETE` must leave the catalogue unchanged,
 which is why the `404` branch returns **before** any list modification.
 
@@ -108,9 +108,9 @@ contract.
 
 | # | Method | Endpoint | Expected | Observed |
 |---|---|---|---|---|
-| 1 | GET | `/api/v1/books` | 200 OK, 3 books | ✅ 3 books |
-| 2 | PUT | `/api/v1/books/2` | 200 OK + updated book | ✅ id 2, "Modern Web Development", 6 copies |
-| 3 | PUT | `/api/v1/books/99` | 404 Not Found | ✅ 404 |
-| 4 | DELETE | `/api/v1/books/3` | 204 No Content | ✅ 204, empty body |
-| 5 | DELETE | `/api/v1/books/99` | 404 Not Found | ✅ 404 |
-| 6 | GET | `/api/v1/books` | 200 OK, 2 books, book 2 updated | ✅ 2 books, ids 1 and 2 |
+| 1 | GET | `/api/v3/books` | 200 OK, 3 books | ✅ 3 books |
+| 2 | PUT | `/api/v3/books/2` | 200 OK + updated book | ✅ id 2, "Modern Web Development", 6 copies |
+| 3 | PUT | `/api/v3/books/99` | 404 Not Found | ✅ 404 |
+| 4 | DELETE | `/api/v3/books/3` | 204 No Content | ✅ 204, empty body |
+| 5 | DELETE | `/api/v3/books/99` | 404 Not Found | ✅ 404 |
+| 6 | GET | `/api/v3/books` | 200 OK, 2 books, book 2 updated | ✅ 2 books, ids 1 and 2 |

@@ -31,14 +31,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class BookApiEndToEndTest {
 
-    private static final String BOOKS_URL = "/api/v1/books";
+    private static final String BOOKS_URL = "/api/v3/books";
 
     @Autowired
     private TestRestTemplate restTemplate;
 
     @Test
     @Order(1)
-    @DisplayName("1. GET /api/v1/books -> 200 OK with 3 books")
+    @DisplayName("1. GET /api/v3/books -> 200 OK with 3 books")
     void getAllBooks() {
         ResponseEntity<Book[]> response = restTemplate.getForEntity(BOOKS_URL, Book[].class);
 
@@ -50,7 +50,7 @@ class BookApiEndToEndTest {
 
     @Test
     @Order(2)
-    @DisplayName("2. PUT /api/v1/books/2 -> 200 OK with the updated book")
+    @DisplayName("2. PUT /api/v3/books/2 -> 200 OK with the updated book")
     void updateBook() {
         BookInput input = new BookInput("Modern Web Development", "Sara Ahmad", 6);
 
@@ -66,7 +66,7 @@ class BookApiEndToEndTest {
 
     @Test
     @Order(3)
-    @DisplayName("3. PUT /api/v1/books/99 -> 404 Not Found")
+    @DisplayName("3. PUT /api/v3/books/99 -> 404 Not Found")
     void updateMissingBook() {
         BookInput input = new BookInput("Ghost Book", "Nobody", 1);
 
@@ -78,7 +78,7 @@ class BookApiEndToEndTest {
 
     @Test
     @Order(4)
-    @DisplayName("4. DELETE /api/v1/books/3 -> 204 No Content")
+    @DisplayName("4. DELETE /api/v3/books/3 -> 204 No Content")
     void deleteBook() {
         ResponseEntity<Void> response = restTemplate.exchange(BOOKS_URL + "/3", HttpMethod.DELETE, null, Void.class);
 
@@ -88,7 +88,7 @@ class BookApiEndToEndTest {
 
     @Test
     @Order(5)
-    @DisplayName("5. DELETE /api/v1/books/99 -> 404 Not Found")
+    @DisplayName("5. DELETE /api/v3/books/99 -> 404 Not Found")
     void deleteMissingBook() {
         ResponseEntity<Void> response = restTemplate.exchange(BOOKS_URL + "/99", HttpMethod.DELETE, null, Void.class);
 

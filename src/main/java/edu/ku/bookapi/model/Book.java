@@ -2,7 +2,7 @@ package edu.ku.bookapi.model;
 
 /**
  * A book of the library catalogue - the REST <em>resource</em> exposed by
- * {@code /api/v1/books}.
+ * {@code /api/v3/books}.
  *
  * <p>Implemented as a Java {@code record}: the components are immutable, the
  * compiler generates the constructor, accessors ({@code id()}, {@code title()},

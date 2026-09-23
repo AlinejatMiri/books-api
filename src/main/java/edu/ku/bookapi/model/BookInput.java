@@ -5,7 +5,7 @@ package edu.ku.bookapi.model;
  * book.
  *
  * <p>The {@code id} is deliberately <b>not</b> part of this model: the id
- * identifies the resource in the URL ({@code /api/v1/books/{bookId}}) and must
+ * identifies the resource in the URL ({@code /api/v3/books/{bookId}}) and must
  * never be changed by a request body. Keeping the client payload separate from
  * the stored resource is what makes "keep the original book ID unchanged"
  * possible.</p>

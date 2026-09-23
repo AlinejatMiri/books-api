@@ -36,6 +36,6 @@ EXPOSE 8080
 
 # Simple health check against the catalogue endpoint (no actuator in this app)
 HEALTHCHECK --interval=30s --timeout=3s --start-period=30s \
-    CMD wget -qO- http://localhost:8080/api/v1/books || exit 1
+    CMD wget -qO- http://localhost:8080/api/v3/books || exit 1
 
 ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75.0", "-jar", "app.jar"]

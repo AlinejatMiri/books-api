@@ -9,7 +9,7 @@ spring:
     name: book-api
 
 server:
-  # Base URL of the lab: http://localhost:8080/api/v1/books
+  # Base URL of the lab: http://localhost:8080/api/v3/books
   port: 8080
 
 logging:
