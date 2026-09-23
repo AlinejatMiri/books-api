@@ -6,10 +6,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 /**
  * Entry point of the <b>Book Catalogue REST API</b>.
  *
- * <p>Component scanning starts here and covers every sub-package
- * ({@code controller}, {@code service}, {@code repository}, {@code model},
- * {@code dto}, {@code mapper}, {@code exception}, {@code validation},
- * {@code config}, {@code filter}) - therefore all classes must live under
+ * <p>LAB-03 - Library book management with HTTP PUT and DELETE. Component
+ * scanning starts here and covers every sub-package ({@code controller},
+ * {@code model}), therefore all classes must live under
  * {@code edu.ku.bookapi}.</p>
  */
 @SpringBootApplication
