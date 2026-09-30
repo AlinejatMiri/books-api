@@ -1,5 +1,8 @@
 HELP.md
 target/
+/compushub-ui/node_modules/
+/compushub-ui/dist/
+/compushub-ui/.vite/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
